@@ -14,7 +14,7 @@ public partial class MyForm : Form
     public MyForm()
     {
         InitializeComponent();
-        ArduinoComms = new();
+        ArduinoComms = new ArduinoComms();
         ArduinoComms.Log += (sender, e) =>
         {
             richTextBox.AppendText($@"{DateTime.Now:hh\:mm\:ss\.ffff}: {e.Message}{Environment.NewLine}");
@@ -23,11 +23,13 @@ public partial class MyForm : Form
         };
         buttonHome.Click += async (sender, e) =>
         {
-            buttonHome.UseWaitCursor = true;
+            UseWaitCursor = true;
             buttonHome.Enabled = false;
             await ArduinoComms.Home();
             buttonHome.Enabled = true;
-            buttonHome.UseWaitCursor = false;
+            UseWaitCursor = false;
+            // Cursor may need to be "nudged" to redraw
+            Cursor.Position = new Point(Cursor.Position.X + 1, 0);
         };
     }
     ArduinoComms ArduinoComms { get; }
@@ -38,8 +40,7 @@ ____
 
 #### ArduinoComms Sim with Semaphores
 
-```
-public class ArduinoComms
+```public class ArduinoComms
 {
     #region S I M
     class MockSerialPort
@@ -56,12 +57,12 @@ public class ArduinoComms
 
     public SerialPort Port = new SerialPort(/*parameters here*/); //creates and instances an internal serial port.
 
-    public SemaphoreSlim XDone = new(1, 1);
-    public SemaphoreSlim YDone = new(1, 1);
-    public SemaphoreSlim Homed = new(1, 1);
-    public SemaphoreSlim Ready = new(1, 1);
-    public SemaphoreSlim Stopped = new(1, 1);
-    public SemaphoreSlim Locked = new(1, 1);
+    public SemaphoreSlim XDone = new SemaphoreSlim(1, 1);
+    public SemaphoreSlim YDone = new SemaphoreSlim(1, 1);
+    public SemaphoreSlim Homed = new SemaphoreSlim(1, 1);
+    public SemaphoreSlim Ready = new SemaphoreSlim(1, 1);
+    public SemaphoreSlim Stopped = new SemaphoreSlim(1, 1);
+    public SemaphoreSlim Locked = new SemaphoreSlim(1, 1);
 
     string NewDataContent = "Default newDataContent - should be inaccessible. If you see this, an error has occurred.";
 
@@ -103,7 +104,7 @@ public class ArduinoComms
         }
         Logger($"Finished home{Environment.NewLine}");
     }
-    Random _rando = new(1);
+    Random _rando = new Random(Seed: 1); // Seed is for repeatability during testing
     private async Task MockWriteMyCommand(int cmd, bool? backoff = null)
     {
         switch (cmd)
@@ -178,6 +179,7 @@ public class LoggerMessageArgs
 
     public string Message { get; }
 }
+
 ```
 
 
